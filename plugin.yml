@@ -1,0 +1,20 @@
+main: Fludixx\BedWars\Bedwars
+api: 3.0.0
+name: Bedwars
+author: Fludixx
+depend: ['Sagiri-API']
+description: Bedwars Plugin for Pocketmine MP
+version: 1
+commands:
+  bw:
+    description: "Bedwars Command"
+  bwsign:
+    description: "Bedwars Sign Command"
+  stats:
+      description: "Bedwars Stats"
+  bwupdate:
+      description: "Start SignUpdater"
+permissions:
+  bw.start:
+    default: op
+    description: "Sets the Bedwars timer to 10 Seconds"
