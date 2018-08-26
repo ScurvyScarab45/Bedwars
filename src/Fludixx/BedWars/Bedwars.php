@@ -13,6 +13,8 @@ use pocketmine\event\Listener;
 use pocketmine\event\player\PlayerExhaustEvent;
 use pocketmine\event\player\PlayerJoinEvent;
 use pocketmine\event\player\PlayerMoveEvent;
+use pocketmine\item\enchantment\Enchantment;
+use pocketmine\item\enchantment\EnchantmentInstance;
 use pocketmine\level\particle\FloatingTextParticle;
 use pocketmine\plugin\PluginBase;
 use pocketmine\utils\TextFormat as f;
@@ -37,7 +39,6 @@ class Bedwars extends PluginBase implements Listener {
 	const VERSION = 1;
 	const API = 3;
 	public $sagiri = null;
-	public $teamcolors = null;
 	public $setup = null;
 	public $prefix = self::PREFIX;
 	public $fjoin = false;
@@ -76,17 +77,6 @@ class Bedwars extends PluginBase implements Listener {
 		}
 		@mkdir("/cloud/bw");
 		$this->sagiri = $sagiri;
-
-		$this->teamcolors = array(
-			1 => $this->teamIntToColorInt(1),
-			2 => $this->teamIntToColorInt(2),
-			3 => $this->teamIntToColorInt(3),
-			4 => $this->teamIntToColorInt(4),
-			5 => $this->teamIntToColorInt(5),
-			6 => $this->teamIntToColorInt(6),
-			7 => $this->teamIntToColorInt(7),
-			8 => $this->teamIntToColorInt(8),
-		);
 	}
 
 	public function teamIntToColorInt(int $int) : int {
@@ -118,6 +108,16 @@ class Bedwars extends PluginBase implements Listener {
 		if($int == 1) {return f::GOLD."Orange".f::WHITE;}
 		if($int == 10) {return f::DARK_PURPLE."Violett".f::WHITE;}
 		if($int == 0) {return f::WHITE."Weiß";}
+	}
+	public function ColorToDyeDamage(int $int) : int {
+		if($int == 14) {return 1;}
+		if($int == 11) {return 4;}
+		if($int == 5) {return 10;}
+		if($int == 4) {return 11;}
+		if($int == 6) {return 9;}
+		if($int == 1) {return 14;}
+		if($int == 10) {return 5;}
+		if($int == 0) {return 15;}
 	}
 	function ordinal($number) {
 		$ends = array('th','st','nd','rd','th','th','th','th','th','th');
@@ -484,8 +484,8 @@ class Bedwars extends PluginBase implements Listener {
 				$player->sendMessage(self::PREFIX."du bist Team $teamname beigetreten!");
 				$join = true;
 			}
-			elseif($playersInTeam >= 1 && $playersInTeam == 0) {
-				$player->sendMessage(self::PREFIX."Du kannst nicht Team $teamname beitretten!");
+			elseif($playersInTeam >= 1 && $playersInOtherTeams == 0) {
+				$player->sendMessage(self::PREFIX."Du kannst nicht Team $teamname beitreten!");
 				$join = false;
 			}
 			elseif($playersInTeam =! 0 && $playersInOtherTeams != 0 && $playersInTeam < $maxTeamMembers) {
@@ -556,7 +556,6 @@ class Bedwars extends PluginBase implements Listener {
 							$players = $this->getServer()->getOnlinePlayers();
 							$counter = 0;
 							$playerarray = array();
-							counter:
 							foreach ($players as $person) {
 								$level = $person->getLevel()->getFolderName();
 								if ($level == $arena->getFolderName()) {
@@ -564,13 +563,28 @@ class Bedwars extends PluginBase implements Listener {
 									$playerarray[] = $person;
 								}
 							}
+							counter:
 							$minplayers = (int)substr($dimension, -1) + 1;
-							$maxTeams = $dimension[0];
-							if ($counter > $dimension) {
-								$counter--;
+							$maxPlayers = (int)substr($dimension, -1);
+							mt_srand(time()*ip2long($player->getAddress()));
+							$maxTeams = (int)$dimension[0];
+							$rndTeam = mt_rand(1, $maxTeams);
+							$players = $this->getServer()->getOnlinePlayers();
+							$sameteams = 0;
+							foreach ($players as $person) {
+								$level = $person->getLevel()->getFolderName();
+								if ($level == $arena->getFolderName()) {
+									$config = new Config("/cloud/users/".$person->getName().".yml", 2);
+									$team = (int)$config->get("team");
+									if($team == $rndTeam) {
+										$sameteams++;
+									}
+								}
+							}
+							if($sameteams >= $maxPlayers)  {
 								goto counter;
 							}
-							$cp->set("team", $counter);
+							$cp->set("team", $rndTeam);
 							$cp->save();
 							$this->sagiri->sendLevelBrodcast($this->prefix . "Es werden min. $minplayers Spieler benötigt!", $arena, false);
 							if ($counter == $minplayers) {
@@ -677,6 +691,7 @@ class Bedwars extends PluginBase implements Listener {
 		$cm = new Config("/cloud/bw/$levelname.yml", 2);
 		$dimension = $cm->get("dimension");
 		$maxTeams = $dimension[0];
+		$playerTeam =  false;
 		$inv->setItem(8, Item::get(Item::DYE, 1)->setCustomName(f::RED."Back"));
 		/*
 		if($maxTeams == 8) {
@@ -697,10 +712,24 @@ class Bedwars extends PluginBase implements Listener {
 					}
 				}
 			}
-			$inv->setItem(
-				$currentTeam-2,
-				Item::get(35, $this->teamIntToColorInt($currentTeam-1), $count)->setCustomName($this->ColorInt2Color($this->teamIntToColorInt($currentTeam-1))));
+			$c = new Config("/cloud/users/" . $player->getName() . ".yml", 2);
+			if($c->get("team") == $currentTeam-1) {
+				$playerTeam = true;
+			}
+			if($playerTeam == false) {
+				$inv->setItem(
+					$currentTeam - 2,
+					Item::get(35, $this->teamIntToColorInt($currentTeam - 1), $count)->setCustomName($this->ColorInt2Color($this->teamIntToColorInt($currentTeam - 1))));
+			} else {
+				$item = Item::get(351, $this->ColorToDyeDamage($this->teamIntToColorInt($currentTeam - 1)), $count)->setCustomName
+				($this->ColorInt2Color($this->teamIntToColorInt($currentTeam - 1)));
+				$item->addEnchantment(new EnchantmentInstance(Enchantment::getEnchantment(Enchantment::PROTECTION), 1));
+				$inv->setItem(
+					$currentTeam - 2, $item);
+				$playerTeam = false;
+			}
 		}
+
 		return true;
 	}
 
