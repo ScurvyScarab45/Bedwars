@@ -469,7 +469,7 @@ class Bedwars extends PluginBase implements Listener {
 			$playersInOtherTeams = 0;
 			$cm = new Config("/cloud/bw/".$player->getLevel()->getFolderName().".yml", 2);
 			$dimension = $cm->get("dimension");
-			$maxTeamMembers = $dimension[2];
+			$maxTeamMembers = (int)$dimension[2];
 			foreach($players as $person) {
 				if ($person->getLevel()->getFolderName() == $player->getLevel()->getFolderName()) {
 					$c = new Config("/cloud/users/" . $person->getName() . ".yml", 2);
@@ -479,6 +479,10 @@ class Bedwars extends PluginBase implements Listener {
 						$playersInOtherTeams++;
 					}
 				}
+			}
+			if($playersInTeam == $maxTeamMembers) {
+				$player->sendMessage(self::PREFIX."Team $teamname ist schon voll!");
+				$join = false;
 			}
 			if($playersInTeam == 0) {
 				$player->sendMessage(self::PREFIX."du bist Team $teamname beigetreten!");
@@ -498,6 +502,9 @@ class Bedwars extends PluginBase implements Listener {
 				$c->save();
 			}
 			$this->getTeamSelector($player);
+		}
+		if($itemname == f::WHITE."Gold: ".f::GREEN."AN" || $itemname == f::WHITE."Gold: ".f::RED."AUS") {
+			$this->goldVote($player);
 		}
 		if ($this->setup == "sign-1" && $player->isOp()) {
 			if ($tile instanceof \pocketmine\tile\Sign) {
@@ -533,6 +540,7 @@ class Bedwars extends PluginBase implements Listener {
 						$player->setGamemode(2);
 						$cp = new Config("/cloud/users/$name.yml", Config::YAML);
 						$cp->set("pos", false);
+						$cp->set("gold_vote", true);
 						$cp->save();
 						$this->getServer()->loadLevel((string)$text['3']);
 						$this->getServer()->getLevelByName((string)$text['3'])->setAutoSave(false);
@@ -541,7 +549,6 @@ class Bedwars extends PluginBase implements Listener {
 						$dimension = $c->get("dimension");
 						$playeramout = eval("return $dimension;");
 						if ($cplayercount == $playeramout) {
-							$tile->setLine(0, f::RED . "Bedwars");
 							$player->sendMessage($this->prefix . "Uhh.. Die Arena ist voll oder schon gestartet.");
 							return false;
 						} else {
@@ -679,8 +686,11 @@ class Bedwars extends PluginBase implements Listener {
 		$lobby->setCustomName(f::GREEN."Zur Lobby");
 		$teams = Item::get(Item::BED);
 		$teams->setCustomName(f::YELLOW."Team Auswahl");
+		$gold = Item::get(Item::GOLD_INGOT);
+		$gold->setCustomName(f::WHITE."Gold: ".f::GREEN."AN");
 		$inv->setItem(8, $startround);
 		$inv->setItem(0, $lobby);
+		$inv->setItem(1, $gold);
 		$inv->setItem(4, $teams);
 		return true;
 	}
@@ -731,6 +741,22 @@ class Bedwars extends PluginBase implements Listener {
 		}
 
 		return true;
+	}
+
+	public function goldVote(Player $player) {
+		if($player->getInventory()->getItemInHand()->getVanillaName() == Item::get(Item::GOLD_INGOT)->getVanillaName()) {
+			$c = new Config("/cloud/users".$player->getName().".yml", 2);
+			$c->set("gold_vote", false);
+			$c->save();
+			$player->sendMessage(self::PREFIX."Du hast für ".f::RED."KEIN".f::WHITE." Gold gestimmt!");
+			$player->getInventory()->setItem(1, Item::get(Item::IRON_INGOT)->setCustomName(f::WHITE."Gold: ".f::RED ."AUS"));
+		} else {
+			$c = new Config("/cloud/users".$player->getName().".yml", 2);
+			$c->set("gold_vote", true);
+			$c->save();
+			$player->sendMessage(self::PREFIX."Du hast ".f::GREEN."FÜR".f::WHITE." Gold gestimmt!");
+			$player->getInventory()->setItem(1, Item::get(Item::GOLD_INGOT)->setCustomName(f::WHITE."Gold: " .f::GREEN."AN"));
+		}
 	}
 
 	public function getEq(Player $player) {

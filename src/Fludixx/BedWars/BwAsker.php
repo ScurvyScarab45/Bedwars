@@ -103,7 +103,7 @@ class BwAsker extends Task
 				$cp = new Config("/cloud/users/".$p->getName().".yml", 2);
 				$var = "p".(int)$cp->get("pos");
 				if($cp->get("bett") != false) {
-					$$var = $this->plugin->ColorInt2Color($this->plugin->teamIntToColorInt((int)$cp->get("pos")));
+					$$var = $this->plugin->ColorInt2Color($this->plugin->teamIntToColorInt((int)$cp->get("pos")))." ";
 				} else {
 					$$var = "";
 				}
@@ -116,7 +116,7 @@ class BwAsker extends Task
 			$pos))."\n"
 			.f::WHITE ."$blank $blank Spieler: ".f::GOLD.$counter."\n"
 			.f::WHITE."$blank $blank Bett: ".f::WHITE.$woolmsg."\n"
-			.f::WHITE."$blank $blank Betten: $p1 $p2 $p3 $p4 $p5 $p6 $p7 $p8"
+			.f::WHITE."$blank $blank Betten: $p1$p2$p3$p4$p5$p6$p7$p8"
 			."\n\n\n\n\n\n\n\n\n\n");
 
 

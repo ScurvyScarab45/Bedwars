@@ -88,9 +88,10 @@ class BwCountdown extends Task
 			$players = $this->plugin->getServer()->getOnlinePlayers();
 			$teamint = 1;
 			$teamdurchlauf = 0;
+			$gold = 0;
+			$nogold = 0;
 			foreach ($players as $player) {
 				if ($player->getLevel()->getFolderName() == $name) {
-					// TEAM CODE
 					$dimension = (string)$c->get("dimension");
 					$playerProTeam = (int)substr($dimension, -1);
 					$allTeams = $dimension[0];
@@ -100,66 +101,11 @@ class BwCountdown extends Task
 						$cp->set("pos", $cp->get("team"));
 						$cp->set("bett", true);
 						$cp->save();
+					}
+					if($cp->get("gold_vote") == true) {
+						$gold++;
 					} else {
-						$players = $this->plugin->getServer()->getOnlinePlayers();
-						$t1 = 0;
-						$t2 = 0;
-						$t3 = 0;
-						$t4 = 0;
-						$t5 = 0;
-						$t6 = 0;
-						$t7 = 0;
-						$t8 = 0;
-						foreach($players as $person) {
-							if($person->getLevel()->getFolderName() == $this->level->getFolderName()) {
-								$pc = new Config("/cloud/users/".$person->getName().".yml", 2);
-								for($currentTeam = 1; $currentTeam-1 == $allTeams, $currentTeam++;) {
-									if($currentTeam-1 == $allTeams) {
-										break;
-									}
-									$this->plugin->getLogger()->info($currentTeam-1);
-									if($pc->get("team") == (int)$currentTeam-1) {
-										$var = (string)"t".(int)$currentTeam - (int)1;
-										$$var++;
-										$this->plugin->getLogger()->info($$var);
-									}
-								}
-							}
-						}
-						if($t1 != $playerProTeam) {
-							$cp->set("team", 1);
-							$cp->save();
-						}
-						if($t2 != $playerProTeam) {
-							$cp->set("team", 2);
-							$cp->save();
-						}
-						if($t3 != $playerProTeam) {
-							$cp->set("team", 3);
-							$cp->save();
-						}
-						if($t4 != $playerProTeam) {
-							$cp->set("team", 4);
-							$cp->save();
-						}
-						if($t5 != $playerProTeam) {
-							$cp->set("team", 5);
-							$cp->save();
-						}
-						if($t6 != $playerProTeam) {
-							$cp->set("team", 6);
-							$cp->save();
-						}
-						if($t7 != $playerProTeam) {
-							$cp->set("team", 7);
-							$cp->save();
-						}
-						if($t8 != $playerProTeam) {
-							$cp->set("team", 8);
-							$cp->save();
-						}
-						$cp->set("pos", $cp->get("team"));
-						$cp->save();
+						$nogold++;
 					}
 					$player->sendMessage(f::BOLD . f::GREEN . "Das Spiel beginnt!");
 					$pos = $cp->get("pos");
@@ -169,7 +115,7 @@ class BwCountdown extends Task
 					$player->teleport($pos);
 					$player->setGamemode(0);
 					$this->plugin->getEq($player);
-					$this->plugin->getScheduler()->scheduleRepeatingTask(new BwAsker($this->plugin, $player), 5);
+					$this->plugin->getScheduler()->scheduleRepeatingTask(new BwAsker($this->plugin, $player), 10);
 					$this->plugin->getLogger()->info("Asker Task hat den Wert '$pname' bekommen.");
 				}
 
@@ -185,7 +131,12 @@ class BwCountdown extends Task
 			}
 			$this->plugin->getScheduler()->scheduleRepeatingTask(new SpawnTask($this->plugin, $this->level), 15);
 			$this->plugin->getScheduler()->scheduleRepeatingTask(new SpawnIronTask($this->plugin, $this->level), 20 * 30);
-			$this->plugin->getScheduler()->scheduleRepeatingTask(new SpawnGoldTask($this->plugin, $this->level), 20 * 60);
+			if($nogold > $gold) {
+				$this->plugin->sagiri->sendLevelBrodcast($this->plugin::PREFIX."Gold-Vote Ergebniss: ".f::GREEN."GOLD AN", $this->level, false);
+				$this->plugin->getScheduler()->scheduleRepeatingTask(new SpawnGoldTask($this->plugin, $this->level), 20 * 60);
+			} else {
+				$this->plugin->sagiri->sendLevelBrodcast($this->plugin::PREFIX."Gold-Vote Ergebniss: ".f::RED."GOLD AUS", $this->level, false);
+			}
 			$this->plugin->getScheduler()->cancelTask($this->getTaskId());
 
 		}
