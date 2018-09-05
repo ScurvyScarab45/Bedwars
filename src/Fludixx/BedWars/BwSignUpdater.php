@@ -1,5 +1,13 @@
 <?php
 
+/**
+ * @author Fludixx
+ * @copyright 2018 Fludixx
+ * @version 0.3
+ * @license MIT
+ *
+ */
+
 namespace Fludixx\BedWars;
 
 use pocketmine\block\Air;

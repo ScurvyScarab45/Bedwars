@@ -1,5 +1,13 @@
 <?php
 
+/**
+ * @author Fludixx
+ * @copyright 2018 Fludixx
+ * @version 0.3
+ * @license MIT
+ *
+ */
+
 namespace Fludixx\BedWars;
 
 use pocketmine\Server;
@@ -98,6 +106,7 @@ class BwAsker extends Task
 		$p6 = null;
 		$p7 = null;
 		$p8 = null;
+
 		foreach($players as $p) {
 			if($p->getLevel()->getFolderName() == $player->getLevel()->getFolderName()) {
 				$cp = new Config("/cloud/users/".$p->getName().".yml", 2);
@@ -164,6 +173,7 @@ class BwAsker extends Task
 				$pos = new Position($spawn['0'], $spawn['1'], $spawn['2']);
 				$player->teleport($pos);
 				$this->plugin->getEq($player);
+				$player->getArmorInventory()->clearAll();
 				$player->setHealth(20);
 				$player->setFood(20);
 				$players = $this->plugin->getServer()->getOnlinePlayers();

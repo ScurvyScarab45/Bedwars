@@ -1,9 +1,22 @@
 <?php
+
+/**
+ * @author Fludixx
+ * @copyright 2018 Fludixx
+ * @version 0.3
+ * @license MIT
+ *
+ */
+
 namespace Fludixx\BedWars;
 
+use pocketmine\entity\Entity;
+use pocketmine\entity\object\ItemEntity;
 use pocketmine\item\Item;
 use pocketmine\level\particle\CriticalParticle;
+use pocketmine\level\particle\FloatingTextParticle;
 use pocketmine\math\Vector3;
+use pocketmine\Player;
 use pocketmine\Server;
 use Fludixx\BedWars\Bedwars;
 use pocketmine\scheduler\Task;
@@ -19,6 +32,7 @@ class SpawnTask extends Task
 {
 	public $plugin;
 	public $level;
+	public $spawn_particles = array();
 
 	public function __construct(Bedwars $plugin, Level $level)
 	{
@@ -38,11 +52,8 @@ class SpawnTask extends Task
 		$bw = $this->plugin;
 		$tiles = $map->getTiles();
 		$levelc = new Config("/cloud/bw/" . $map->getFolderName() . ".yml", 2);
-		if($levelc->get("busy") == false) {
-			$this->plugin->getScheduler()->cancelTask($this->getTaskId());
-		}
 		$spawnable = array(
-			"bronze" => Item::get(Item::BRICK),
+			"bronze" => Item::get(Item::BRICK)
 		);
 
 		foreach ($tiles as $tile) {
@@ -51,31 +62,65 @@ class SpawnTask extends Task
 				foreach ($spawnable as $label => $item) {
 					if ($label == $spawn) {
 						if ($label == $spawn) {
-							$pos = new Position($tile->getX()+0.5, $tile->getY() + 2, $tile->getZ()+0.5, $tile->getLevel
-							());
-							$players = $this->plugin->getServer()->getOnlinePlayers();
-							foreach($players as $player) {
-								if($player->distance($pos) <= 6) {
-									$map->dropItem($pos, $item, new Vector3(0, 0.1, 0));
+							$pos = new Position($tile->getX()+0.5, $tile->getY() + 2, $tile->getZ()+0.5, $tile->getLevel());
+							$identifier = (string)(round($tile->getX())+0.5)."-".
+								(string)(round($tile->getY())+2.5)."-".
+								(string)(round($tile->getZ())+0.5);
+							if($levelc->get("$identifier") == false) {
+								$instance = new FloatingTextParticle(new Vector3($tile->getX() + 0.5,
+									$tile->getY() + 2.5,
+									$tile->getZ() + 0.5), "", f::GOLD . "0");
+								$levelc->set("$identifier", array("bronze" => 0, "instance" => serialize($instance)));
+								$levelc->save();
+								$this->level->dropItem($pos, $item, new Vector3(0, 0.0, 0));
+							}
+							if($levelc->get($identifier)["bronze"] == 0) {
+								$spawner = $levelc->get("$identifier");
+								$textParticle = unserialize($spawner["instance"]);
+								$textParticle->setInvisible(true);
+								$this->level->addParticle($textParticle);
+							}
+								if(array_search($identifier, $this->spawn_particles) == false) {
+									$this->spawn_particles[] = $identifier;
+								}
+								$spawner = $levelc->get("$identifier");
+								$currentBronze = (int) $spawner["bronze"];
+								$textParticle = unserialize($spawner["instance"]);
+								$iteme = $this->level->getNearestEntity($pos, 3);
+								if($iteme instanceof Player) {
+									$this->level->dropItem($pos, $item, new Vector3(0, 0.0, 0));
+								}
+								if($currentBronze >= 120) {
+
+								} else {
+									$spawner = $levelc->get("$identifier");
+									$spawner["bronze"] = $currentBronze+1;
+									$levelc->set("$identifier", $spawner);
+									$levelc->save();
+									$textParticle->setInvisible(true);
+									$this->level->addParticle($textParticle);
+									$textParticle->setInvisible(false);
+									$textParticle->setTitle(f::GOLD.$spawner["bronze"]);
+									$this->level->addParticle($textParticle);
+									$spawner = $levelc->get("$identifier");
+									$spawner["instance"] = serialize($textParticle);
+									$levelc->set("$identifier", $spawner);
+									$levelc->save();
 								}
 							}
 						}
 					}
 				}
 			}
-
-			$players = $bw->getServer()->getOnlinePlayers();
-			$counter = 0;
-			foreach ($players as $player) {
-				if ($player->getLevel()->getFolderName() == $map->getFolderName()) {
-					$counter++;
+			if($levelc->get("busy") == false) {
+				$levelc->set("spawnpoints", $this->spawn_particles);
+				$levelc->save();
+				foreach($this->spawn_particles as $particle) {
+					$identifier = $levelc->get($particle);
+					$obj = unserialize($identifier["instance"]);
+					$obj->setInvisible(true);
+					$this->level->addParticle($obj);
 				}
 			}
-			if ($counter <= 1) {
-				$bw->getScheduler()->cancelTask($this->getTaskId());
-			}
-
-
-		}
 	}
 }

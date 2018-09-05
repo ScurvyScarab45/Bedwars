@@ -1,5 +1,13 @@
 <?php
 
+/**
+ * @author Fludixx
+ * @copyright 2018 Fludixx
+ * @version 0.3
+ * @license MIT
+ *
+ */
+
 namespace Fludixx\BedWars;
 
 use pocketmine\entity\object\ItemEntity;
@@ -122,6 +130,13 @@ class BwCountdown extends Task
 			}
 			$c->set("busy", true);
 			$c->save();
+			$bronze_counters = $c->get("spawnpoints");
+			if($bronze_counters != false) {
+				foreach($bronze_counters as $counter) {
+					$c->remove("$counter");
+				}
+				$c->save();
+			}
 			$items = $this->level->getEntities();
 			foreach($items as $item) {
 				if($item instanceof ItemEntity || $item instanceof Item) {
@@ -131,7 +146,7 @@ class BwCountdown extends Task
 			}
 			$this->plugin->getScheduler()->scheduleRepeatingTask(new SpawnTask($this->plugin, $this->level), 15);
 			$this->plugin->getScheduler()->scheduleRepeatingTask(new SpawnIronTask($this->plugin, $this->level), 20 * 30);
-			if($nogold > $gold) {
+			if($gold > $nogold) {
 				$this->plugin->sagiri->sendLevelBrodcast($this->plugin::PREFIX."Gold-Vote Ergebniss: ".f::GREEN."GOLD AN", $this->level, false);
 				$this->plugin->getScheduler()->scheduleRepeatingTask(new SpawnGoldTask($this->plugin, $this->level), 20 * 60);
 			} else {

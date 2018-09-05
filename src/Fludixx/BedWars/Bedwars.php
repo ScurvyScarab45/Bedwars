@@ -1,5 +1,14 @@
 <?php
 
+/**
+ * @author Fludixx
+ * @copyright 2018 Fludixx
+ * @version 0.3
+ * @license MIT
+ *
+ */
+
+
 declare(strict_types=1);
 
 namespace Fludixx\BedWars;
@@ -9,13 +18,13 @@ use pocketmine\event\entity\EntityDamageByEntityEvent;
 use pocketmine\event\entity\EntityDamageEvent;
 use pocketmine\event\entity\EntityExplodeEvent;
 use pocketmine\event\inventory\CraftItemEvent;
+use pocketmine\event\inventory\InventoryPickupItemEvent;
 use pocketmine\event\Listener;
 use pocketmine\event\player\PlayerExhaustEvent;
 use pocketmine\event\player\PlayerJoinEvent;
-use pocketmine\event\player\PlayerMoveEvent;
+use pocketmine\inventory\Inventory;
 use pocketmine\item\enchantment\Enchantment;
 use pocketmine\item\enchantment\EnchantmentInstance;
-use pocketmine\level\particle\FloatingTextParticle;
 use pocketmine\plugin\PluginBase;
 use pocketmine\utils\TextFormat as f;
 use pocketmine\utils\Config;
@@ -23,7 +32,6 @@ use pocketmine\command\CommandSender;
 use pocketmine\command\Command;
 use pocketmine\Player;
 use pocketmine\item\Item;
-use pocketmine\level\Level;
 use pocketmine\math\Vector3;
 use pocketmine\level\Position;
 use pocketmine\event\block\BlockPlaceEvent;
@@ -36,7 +44,7 @@ class Bedwars extends PluginBase implements Listener {
 
 	const NAME = f::DARK_GRAY."[".f::RED."Bed".f::WHITE."Wars".f::DARK_GRAY."]";
 	const PREFIX = self::NAME."".f::DARK_GRAY." | ".f::WHITE;
-	const VERSION = 1;
+	const VERSION = 0.3;
 	const API = 3;
 	public $sagiri = null;
 	public $setup = null;
@@ -141,9 +149,7 @@ class Bedwars extends PluginBase implements Listener {
 	public function rm(Player $player, int $id = Item::BRICK){
 		$player->getInventory()->remove(Item::get($id, 0, 1));
 	}
-	public function add(Player $player, int $i, int $id = Item::BRICK){
-		$name = $player->getName();
-		$inv = $player->getInventory();
+	public function add(Inventory $inv, int $i, int $id = Item::BRICK){
 		$c = 0;
 		while($c < $i){
 			$inv->addItem(
@@ -187,16 +193,16 @@ class Bedwars extends PluginBase implements Listener {
 					} else {
 						$sender->sendMessage(self::PREFIX . "Uhh.. Komm wieder wenn du die Rechte hast.");
 					}
-				} elseif (!empty($args['0']) && empty($args['1'])) {
+				} elseif (!empty($args['0']) || empty($args['1'])) {
 				} else {
-					$sender->sendMessage(self::PREFIX . "Uhh.. /bw [ARENA] [8x1...]");
+					$sender->sendMessage(self::PREFIX . "Uhh.. /bw [ARENA] [8*1...]");
 				}
 				if (!$sender->isOp()) {
 					$sender->sendMessage(self::PREFIX . "Uhh.. Komm wieder wenn du OP bist.");
 					return false;
 				} else {
 					if (empty($args['0']) || empty($args['1'])) {
-						$sender->sendMessage(self::PREFIX . "Uhh.. /bw [ARENA] [8x1...]");
+						$sender->sendMessage(self::PREFIX . "Uhh.. /bw [ARENA] [8*1...]");
 						return false;
 					} else {
 						$sender->sendMessage(self::PREFIX . "OK. " . $args['1'] . " wurde als Deminsion ausgewählt.");
@@ -679,6 +685,7 @@ class Bedwars extends PluginBase implements Listener {
 
 	public function getWaitingItems(Player $player) : bool {
 		$inv = $player->getInventory();
+		$c = new Config("/cloud/users/{$player->getName()}.yml", 2);
 		$inv->clearAll();
 		$startround = Item::get(Item::REDSTONE_TORCH, 0, 1);
 		$startround->setCustomName(f::RED."Runde Starten");
@@ -687,10 +694,18 @@ class Bedwars extends PluginBase implements Listener {
 		$teams = Item::get(Item::BED);
 		$teams->setCustomName(f::YELLOW."Team Auswahl");
 		$gold = Item::get(Item::GOLD_INGOT);
+		$iron = Item::get(Item::IRON_INGOT);
 		$gold->setCustomName(f::WHITE."Gold: ".f::GREEN."AN");
+		$iron->setCustomName(f::WHITE."Gold: ".f::RED."AUS");
 		$inv->setItem(8, $startround);
 		$inv->setItem(0, $lobby);
-		$inv->setItem(1, $gold);
+
+		if($c->get("gold_vote")) {
+			$inv->setItem(1, $gold);
+		} else {
+			$inv->setItem(1, $iron);
+		}
+
 		$inv->setItem(4, $teams);
 		return true;
 	}
@@ -745,13 +760,13 @@ class Bedwars extends PluginBase implements Listener {
 
 	public function goldVote(Player $player) {
 		if($player->getInventory()->getItemInHand()->getVanillaName() == Item::get(Item::GOLD_INGOT)->getVanillaName()) {
-			$c = new Config("/cloud/users".$player->getName().".yml", 2);
+			$c = new Config("/cloud/users/".$player->getName().".yml", 2);
 			$c->set("gold_vote", false);
 			$c->save();
 			$player->sendMessage(self::PREFIX."Du hast für ".f::RED."KEIN".f::WHITE." Gold gestimmt!");
 			$player->getInventory()->setItem(1, Item::get(Item::IRON_INGOT)->setCustomName(f::WHITE."Gold: ".f::RED ."AUS"));
 		} else {
-			$c = new Config("/cloud/users".$player->getName().".yml", 2);
+			$c = new Config("/cloud/users/".$player->getName().".yml", 2);
 			$c->set("gold_vote", true);
 			$c->save();
 			$player->sendMessage(self::PREFIX."Du hast ".f::GREEN."FÜR".f::WHITE." Gold gestimmt!");
@@ -907,6 +922,7 @@ class Bedwars extends PluginBase implements Listener {
 				$event->setCancelled(true);
 				$opfer->setHealth(20);
 				$this->getEq($opfer);
+				$opfer->getArmorInventory()->clearAll();
 				$levelname = $damger->getLevel()->getFolderName();
 				$opos = $oc->get("pos");
 				$lc = new Config("/cloud/bw/$levelname.yml", 2);
@@ -1005,6 +1021,24 @@ class Bedwars extends PluginBase implements Listener {
 	public function onCraft(CraftItemEvent $event) {
 		$event->setCancelled(true);
 	}
+
+	public function onPickup(InventoryPickupItemEvent $event) {
+			$item = $event->getItem();
+			$identifier = (string)(round($item->getX())-0.5)."-".
+				(string)(round($item->getY())+0.5)."-".
+				(string)(round($item->getZ())-0.5);
+			//$this->getLogger()->info($identifier);
+			$levelname = $item->getLevel()->getFolderName();
+			$c = new Config("/cloud/bw/$levelname.yml");
+			$spawner = $c->get("$identifier");
+			if($spawner != false) {
+				$this->add($event->getInventory(), (int)$spawner["bronze"]);
+				$spawner["bronze"] = 0;
+				$c->set("$identifier", $spawner);
+				$c->save();
+			}
+	}
+
 	public function onTnt(EntityExplodeEvent $event) {
 		$event->setBlockList(array(Block::get(Block::SANDSTONE), Block::get(Block::WEB), Block::get(Block::END_STONE)));
 
