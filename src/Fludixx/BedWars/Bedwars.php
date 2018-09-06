@@ -57,20 +57,20 @@ class Bedwars extends PluginBase implements Listener {
 
 	public function onEnable() : void{
 		$this->getServer()->getPluginManager()->registerEvents($this, $this);
-		$this->getLogger()->info(self::PREFIX."Lade Bedwars...");
+		$this->getLogger()->info(self::PREFIX."Charged Bedwars...");
 		$sagiri = $this->getServer()->getPluginManager()->getPlugin("Sagiri-API");
 		//$running = $sagiri->isEnabled();
 		$this->getLogger()->info("Sagiri-API wird geladen...");
 		if($sagiri) {
-			$sagiri->getLogger()->info($sagiri::PREFIX."Anfrage wird gelesen...");
+			$sagiri->getLogger()->info($sagiri::PREFIX."Request is read...");
 			$op = $sagiri->getCoOp("Bedwars");
 			$this->withSagiri = $op;
 		} else {
-			$this->getLogger()->error(self::PREFIX."Konnte keinen Kontakt mit Sagiri aufnehmen!");
+			$this->getLogger()->error(self::PREFIX."Could not contact Sagiri!");
 			$this->withSagiri = false;
 			$this->setEnabled(false);
 		}
-		$this->getLogger()->info("Regestrierte Arenas:");
+		$this->getLogger()->info("Registered Arenas:");
 		foreach(glob('/cloud/bw/*.yml') as $file) {
 			if($file == "/cloud/bw/ranking.yml") {
 
@@ -186,30 +186,30 @@ class Bedwars extends PluginBase implements Listener {
 							$c = new Config("/cloud/bw/$levelname.yml");
 							$c->set("countdown", 10);
 							$c->save();
-							$sender->sendMessage(self::PREFIX . "Countdownwert wurde auf 10 gestellt.");
+							$sender->sendMessage(self::PREFIX . "Countdown was set to 10.");
 						} else {
-							$sender->sendMessage(self::PREFIX . "Uhh.. Du bist kein Spieler?");
+							$sender->sendMessage(self::PREFIX . "Uhh .. you are not a player?");
 						}
 					} else {
-						$sender->sendMessage(self::PREFIX . "Uhh.. Komm wieder wenn du die Rechte hast.");
+						$sender->sendMessage(self::PREFIX . "Uhh .. Come back if you have the rights.");
 					}
 				} elseif (!empty($args['0']) || empty($args['1'])) {
 				} else {
 					$sender->sendMessage(self::PREFIX . "Uhh.. /bw [ARENA] [8*1...]");
 				}
 				if (!$sender->isOp()) {
-					$sender->sendMessage(self::PREFIX . "Uhh.. Komm wieder wenn du OP bist.");
+					$sender->sendMessage(self::PREFIX . "Uhh .. Come back if you are OP.");
 					return false;
 				} else {
 					if (empty($args['0']) || empty($args['1'])) {
 						$sender->sendMessage(self::PREFIX . "Uhh.. /bw [ARENA] [8*1...]");
 						return false;
 					} else {
-						$sender->sendMessage(self::PREFIX . "OK. " . $args['1'] . " wurde als Deminsion ausgewählt.");
+						$sender->sendMessage(self::PREFIX . "OK. " . $args['1'] . " was selected as a deminsion.");
 						$this->getServer()->loadLevel((string)$args['0']);
 						$arena = $this->getServer()->getLevelByName((string)$args['0']);
 						if (!$arena) {
-							$sender->sendMessage(self::PREFIX . "Uhh.. Keine Arena namens " . $args['0'] . " gefunden.");
+							$sender->sendMessage(self::PREFIX . "Uhh .. No arena called " . $args['0'] . " found.");
 							return false;
 						} else {
 							$rechnung = $args[1];
