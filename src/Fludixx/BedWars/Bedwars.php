@@ -215,7 +215,7 @@ class Bedwars extends PluginBase implements Listener {
 							$rechnung = $args[1];
 							$allespieler = eval("return $rechnung;");
 							if ($allespieler > 64) {
-								$sender->sendMessage(self::PREFIX . "Es dürfen nicht mehr als 64 Spieler Teilnehmen!");
+								$sender->sendMessage(self::PREFIX . "There may not be more than 64 players!");
 								return false;
 							}
 							$this->dimension = $args['1'];
@@ -223,14 +223,14 @@ class Bedwars extends PluginBase implements Listener {
 								$arena->getSafeSpawn()->getZ(), $arena);
 							if ($sender instanceof Player) {
 								$sender->teleport($pos);
-								$sender->sendMessage(self::PREFIX . "Plaziere einen Block auf den Spawn vom 1 Spieler!");
+								$sender->sendMessage(self::PREFIX . "Place a block on the spawn of the 1 player!");
 								$inv = $sender->getInventory();
 								$wolle = Item::get(Item::WOOL, $this->teamIntToColorInt(1), 1);
 								$inv->setItem(0, $wolle);
 								$this->setup = "8x8-1";
 								return true;
 							} else {
-								$sender->sendMessage(self::PREFIX . "Uhh.. Du bist kein Spieler?");
+								$sender->sendMessage(self::PREFIX . "Uhh .. you are not a player");
 								return false;
 							}
 						}
@@ -250,12 +250,12 @@ class Bedwars extends PluginBase implements Listener {
 					$arena = $args['0'];
 					if (is_file("/cloud/bw/$arena.yml")) {
 						$c = new Config("/cloud/bw/$arena.yml");
-						$sender->sendMessage(self::PREFIX . "OK. $arena wurde gefunden. Bitte klicke auf ein Schild.");
+						$sender->sendMessage(self::PREFIX . "OK. $arena was found. Please click on a sign.");
 						$this->setup = "sign-1";
 						$this->arena = $arena;
 						return true;
 					} else {
-						$sender->sendMessage(self::PREFIX . "Uhh.. So eine Arena wurde nie regestriert.");
+						$sender->sendMessage(self::PREFIX . "Uhh.. Such an arena was never registered.");
 						return false;
 					}
 				}
